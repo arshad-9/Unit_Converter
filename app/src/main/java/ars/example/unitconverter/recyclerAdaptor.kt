@@ -25,15 +25,7 @@ class recyclerAdaptor(val list :List<MesurmentTypes>,val listenner:((Int)->Unit)
     override fun onBindViewHolder(holder: viewHolder, position: Int) {
           holder.binding?.img?.setImageResource(list[position].image)
          holder.binding?.description?.text = list[position].type
-        if(selectedPosition==holder.adapterPosition)
-        {
-            holder.binding?.ParentItem?.setBackgroundColor(Color.RED)
-            holder.binding?.description?.setTextColor(Color.WHITE)
 
-        }else{
-            holder.binding?.ParentItem?.setBackgroundColor(Color.parseColor("#CDDAF36A"))
-            holder.binding?.description?.setTextColor(Color.BLACK)
-        }
          holder?.binding?.ParentItem?.setOnClickListener {
              listenner!!(holder.adapterPosition)
              selectedPosition = holder.adapterPosition

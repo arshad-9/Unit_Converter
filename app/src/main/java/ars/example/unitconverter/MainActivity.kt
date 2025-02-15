@@ -1,74 +1,155 @@
 package ars.example.unitconverter
 
+import android.content.Context
 import android.opengl.Visibility
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
+import android.view.KeyEvent
 import android.view.View
+import android.view.inputmethod.InputMethodManager
+import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.Toast
+import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import ars.example.unitconverter.databinding.ActivityMainBinding
+import com.google.android.material.navigation.NavigationBarView.OnItemSelectedListener
 
 class MainActivity : AppCompatActivity() {
 
     private var binding:ActivityMainBinding?= null
+    private var fromUnit:String?=null
+    private var toUnit:String?=null
     private var operation :Int?= null
-    private var functionRecycler  : ((Int) -> Unit)?=null
+
     private var UnitList  :ArrayList<String> = arrayListOf()
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        functionRecycler ={
-            param:Int->
-            operation = param
-            when(param){
-                0->{ UnitList  = AreaMapping.getList()
-                 setUnits()
-                }
-                1->{ UnitList  = WeightMApping.getList()
-                setUnits()
-                }
-                2->{ UnitList  = LengthMapping.getList()
-                setUnits()
-                  }
-                3->{ UnitList  = TemperatureMpping.getList()
-                    setUnits()
-                }
-                4->{ UnitList  = volumeMapping.getList()
-                setUnits()
-            }
-                5->{ UnitList  = timeMapping.getList()
-                    setUnits()
-                }
-                else->{UnitList = UnitList}
 
-            }
-        }
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding?.root)
+        getIntentData()
 
-       binding?.recycler?.adapter = recyclerAdaptor(TypeSetter.getList(),functionRecycler)
-       binding?.recycler?.layoutManager = LinearLayoutManager(this,LinearLayoutManager.HORIZONTAL,false)
+        setSupportActionBar(binding?.toolbar)
+        supportActionBar?.title = "Conversion"
+        supportActionBar?.setDisplayHomeAsUpEnabled(true)
+        supportActionBar?.setDisplayShowHomeEnabled(true)
 
-        binding?.toUnit?.setOnClickListener {
-           resetResult()
+        // Handle Back Arrow Click
+        binding?.toolbar?.setNavigationOnClickListener {
+            Toast.makeText(this, "Back clicked", Toast.LENGTH_SHORT).show()
+            finish()  // Closes the current activity
         }
-        binding?.fromUnit?.setOnClickListener {
-           resetResult()
+
+
+        binding?.fromNumber?.setOnClickListener {
+            resetResult()
         }
-        binding?.cal?.setOnClickListener {
-            if(UnitList.isEmpty())
-            { Toast.makeText(this,"Select a criterion (Area ,Length etc.)",Toast.LENGTH_SHORT).show() }
-            else{conversion()
-                 binding?.toNumder?.setBackgroundResource(R.drawable.borders)}
+
+
+
+        binding?.fromUnit?.onItemSelectedListener =object:AdapterView.OnItemSelectedListener{
+            override fun onItemSelected(
+                parent: AdapterView<*>?,
+                view: View?,
+                position: Int,
+                id: Long
+            ) {
+                fromUnit = UnitList[position]
+                if(binding?.fromNumber?.text?.toString()?.isNotEmpty()!!)
+                {
+                    conversion()
+                }
+
+            }
+
+            override fun onNothingSelected(parent: AdapterView<*>?) {
+                //Eat % Star .....
+            }
+        }
+
+
+        binding?.toUnit?.onItemSelectedListener =object:AdapterView.OnItemSelectedListener{
+            override fun onItemSelected(
+                parent: AdapterView<*>?,
+                view: View?,
+                position: Int,
+                id: Long
+            ) {
+                toUnit = UnitList[position]
+                if(binding?.fromNumber?.text?.toString()?.isNotEmpty()!!)
+                {
+                    conversion()
+                }
+
+            }
+
+            override fun onNothingSelected(parent: AdapterView<*>?) {
+                //Eat % Star .....
+            }
+        }
+
+
+
+        binding?.pressBtn?.setOnClickListener {
+            if(binding?.fromNumber?.text?.toString()?.isNotEmpty()!! ){
+                binding?.pressBtn?.visibility = View.GONE
+                conversion()
+            }
+            else{
+                Toast.makeText(this, "Please enter a value", Toast.LENGTH_SHORT).show()
+            }
+
+        }
+
+        binding?.fromNumber?.setOnKeyListener { v, keyCode, event ->
+            if (event.action == KeyEvent.ACTION_DOWN && keyCode == KeyEvent.KEYCODE_ENTER) {
+                 val input= binding?.fromNumber?.text.toString()
+
+                if (input.isNotEmpty()) {
+                   conversion() // Call your conversion function
+
+                } else {
+                    Toast.makeText(this, "Please enter a value", Toast.LENGTH_SHORT).show()
+                }
+
+                // **Hide Keyboard**
+                val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+                imm.hideSoftInputFromWindow(binding?.fromNumber?.windowToken, 0)
+
+                true  // Return true to indicate the event is handled
+            } else {
+                false  // Return false to let other events proceed
+            }
+        }
+
+
+    }
+
+
+
+    private fun getIntentData()
+    {
+        if(intent.hasExtra("UnitList")){
+            UnitList = intent.getStringArrayListExtra("UnitList")!!
+            setUnits()
+        }
+        if(intent.hasExtra("operation")){
+            operation = intent.getIntExtra("operation",0)
         }
     }
 
+
     private fun conversion(){
-        val fUnit = binding?.fromUnit?.text.toString()
-        val tUnit = binding?.toUnit?.text.toString()
+        val fUnit = fromUnit
+        val tUnit = toUnit
         val value = binding?.fromNumber?.text.toString()
+
+        Log.d("TAG",fUnit.toString())
+        Log.d("TAG",tUnit.toString())
+        Log.d("TAG",value.toString())
 
         if( fUnit.isNullOrEmpty() || tUnit.isNullOrEmpty() || value.isNullOrEmpty())
         {
@@ -87,25 +168,27 @@ class MainActivity : AppCompatActivity() {
 
             binding?.toNumder?.setText( result.toString())
 
+
         }
 
     }
     private fun setUnits(){
 
-        binding?.fromUnit?.text =null
-        binding?.toUnit?.text=null
-        binding?.toNumder?.text = null
-        val adaptor = ArrayAdapter<String>(this,R.layout.drop_down_layout,UnitList)
-        binding?.fromUnit?.setAdapter(adaptor)
-        val adaptor2 = ArrayAdapter<String>(this,R.layout.drop_down_layout,UnitList)
-        binding?.toUnit?.setAdapter(adaptor2)
-    }
+        val adaptor = ArrayAdapter(this,R.layout.spinner_layout_from,UnitList)
+        adaptor.setDropDownViewResource(R.layout.custom_spinner_dropdown_item)
+        val adaptor2 = ArrayAdapter(this,R.layout.spinner_layout_to,UnitList)
+        adaptor2.setDropDownViewResource(R.layout.custom_spinner_dropdown_item)
+        binding?.fromUnit?.adapter =adaptor
+        binding?.toUnit?.adapter=adaptor2
+
+           }
 
     private fun resetResult(){
         if(UnitList.isEmpty())
         {Toast.makeText(this,"Select a criterion (Area ,Length etc.)",Toast.LENGTH_SHORT).show()}
-        binding?.toNumder?.text=null
-        binding?.toNumder?.setBackgroundResource(R.drawable.border_no_result)
+        binding?.fromNumber?.text?.clear()
+        binding?.pressBtn?.visibility = View.VISIBLE
+
 
     }
 

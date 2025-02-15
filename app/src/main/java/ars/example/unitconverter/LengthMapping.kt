@@ -17,7 +17,7 @@ object LengthMapping {
         if(type =="Metre"){return 1.0 }
         if(type =="Decimetre"){return 0.1 }
         if(type =="Centimetre"){return 0.01 }
-        if(type =="MilliMeter"){return 0.001}
+        if(type =="MiliMeter"){return 0.001}
         if(type =="Inch"){return 0.0254}
         if(type =="Foot"){return 0.3048}
         if(type =="Yard"){return 0.9144}
@@ -29,7 +29,7 @@ object LengthMapping {
          val from_To_Metre = convertToMetre(from)
          val to_To_Metre = convertToMetre(to)
 
-         return (from_To_Metre * value )/to_To_Metre
+         return (from_To_Metre  /to_To_Metre ) * value
      }
 
     fun getList():ArrayList<String>{
